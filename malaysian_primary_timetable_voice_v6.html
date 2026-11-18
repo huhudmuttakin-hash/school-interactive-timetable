@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>5 Aspirasi — Interactive Timetable & Voice Assistant</title>
+<style>
+:root{--ink:#172033;--muted:#64748b;--line:#cbd5e1;--paper:#fff;--bg:#f1f5f9;--accent:#2563eb}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+header{width:100%;margin:auto;padding:16px 12px 8px;text-align:center}
+h1{font-size:clamp(22px,3vw,34px);margin:0 0 3px;letter-spacing:.02em}
+h2{font-size:clamp(17px,2vw,22px);margin:0;text-decoration:underline}
+.meta{display:flex;justify-content:space-between;gap:8px;margin:10px 0 4px;color:#334155;font-weight:600;flex-wrap:wrap;font-size:clamp(10px,1.2vw,14px)}
+.toolbar{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin:8px auto 8px;padding:0 8px}
+button{border:0;border-radius:9px;padding:9px 13px;font:600 13px inherit;cursor:pointer;background:#e2e8f0;color:#172033}
+button.primary{background:var(--accent);color:white}
+button:hover{filter:brightness(.97)}
+.table-wrap{width:100%;margin:0 auto;padding:0 6px 10px;overflow:visible}
+.timetable{width:100%;display:grid;grid-template-columns:minmax(58px,10%) repeat(11,minmax(0,1fr));grid-template-rows:clamp(54px,8vh,78px) repeat(5,minmax(82px,calc((100dvh - 255px)/5)));border-top:2px solid #222;border-left:2px solid #222;background:white}
+.cell{border-right:1px solid #555;border-bottom:1px solid #555;min-width:0;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;padding:clamp(2px,.45vw,7px) 2px;background:#fff;cursor:pointer;overflow:hidden}
+.cell:hover{background:#f8fafc;outline:2px solid #93c5fd;outline-offset:-2px;z-index:1}
+.header-cell{justify-content:flex-end;font-weight:800;padding:7px 3px;cursor:default}
+.header-cell:hover,.day:hover{background:#fff;outline:0}
+.period{font-size:clamp(7px,1.05vw,14px);font-weight:800;white-space:normal;line-height:1.05}
+.time{font-size:clamp(6px,.85vw,11px);font-weight:700;white-space:normal;line-height:1.05}
+.day{font-size:clamp(11px,2vw,25px);font-weight:500;justify-content:center;overflow-wrap:anywhere}
+.subject{font-size:clamp(7px,1.05vw,14px);font-weight:800;line-height:1.08;overflow-wrap:anywhere;word-break:normal}
+.teacher{font-size:clamp(6px,.8vw,10px);color:#334155;margin-top:auto;padding-top:3px;overflow-wrap:anywhere}
+.subnote{font-size:clamp(6px,.72vw,9px);font-weight:700;color:#475569;margin-top:3px;overflow-wrap:anywhere}
+.special{font-size:28px;font-weight:400;justify-content:center}
+.breakhead{font-size:clamp(6px,.75vw,10px);line-height:1.05}
+.breakhead strong{font-size:clamp(7px,.9vw,11px)}
+.footer{width:100%;margin:0 auto 12px;padding:0 8px;color:#64748b;font-size:10px}
+.hint{width:100%;margin:0 auto;padding:0 8px 8px;color:var(--muted);font-size:11px;text-align:center}
+dialog{border:0;border-radius:16px;padding:0;width:min(480px,calc(100% - 28px));box-shadow:0 24px 80px #0f172a44}
+dialog::backdrop{background:#0f172a88}
+.modal{padding:22px}
+.modal h3{margin:0 0 4px;font-size:21px}
+.modal .muted{color:var(--muted);font-size:13px;margin-bottom:16px}
+label{display:block;font-weight:700;font-size:13px;margin:12px 0 5px}
+input,textarea{width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:10px;font:14px inherit;color:var(--ink);background:white}
+textarea{min-height:100px;resize:vertical}
+.modal-actions{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;margin-top:18px}
+.modal-actions .right{display:flex;gap:8px;margin-left:auto}
+.small{font-size:12px;color:var(--muted);font-weight:500}
+@media(max-width:700px){header{padding:10px 6px 5px}h1{font-size:clamp(17px,4.5vw,25px)}h2{font-size:16px}.meta{font-size:9px;justify-content:center}.toolbar{gap:5px}.toolbar button{font-size:11px;padding:7px 9px}.table-wrap{padding:0 3px 6px}.timetable{grid-template-columns:minmax(43px,10%) repeat(11,minmax(0,1fr));grid-template-rows:54px repeat(5,minmax(78px,calc((100dvh - 205px)/5)))}.day{font-size:clamp(10px,2.8vw,17px)}.subject{font-size:clamp(6px,1.65vw,10px)}.teacher{font-size:clamp(5px,1.25vw,8px)}.subnote{font-size:clamp(5px,1.15vw,7px)}.period{font-size:clamp(6px,1.5vw,9px)}.time{font-size:clamp(5px,1.15vw,7px)}}
+
+.voice-panel{width:calc(100% - 16px);max-width:1200px;margin:6px auto 10px;padding:10px;border:1px solid #cbd5e1;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap}
+.voice-panel label{display:inline-flex;align-items:center;gap:6px;margin:0;font-size:12px}
+.voice-panel select{max-width:190px;border:1px solid #cbd5e1;border-radius:8px;padding:8px;background:#fff;color:var(--ink);font:600 12px system-ui}
+.voice-panel button{font-size:12px;padding:8px 10px}
+.voice-panel button.recording{background:#dc2626;color:#fff}
+.voice-status{width:100%;text-align:center;color:#64748b;font-size:11px;min-height:15px}
+.voice-panel .repeat-on{background:#7c3aed;color:#fff}
+@media(max-width:700px){.voice-panel{gap:5px;padding:7px;margin:4px auto 7px}.voice-panel button{font-size:10px;padding:7px 8px}.voice-panel label{font-size:10px}.voice-panel select{font-size:10px;max-width:135px;padding:6px}}
+
+@media print{body{background:white}.toolbar,.hint{display:none}.table-wrap{padding:0;overflow:visible}.timetable{min-width:0;grid-template-columns:105px repeat(11,1fr);grid-template-rows:72px repeat(5,130px)}.cell{break-inside:avoid}}
+
+/* Landscape phone: fit the complete timetable into the visible screen */
+@media (orientation:landscape) and (max-height:600px){
+ html,body{height:100%;overflow:hidden}
+ header{padding:3px 8px 1px}
+ h1{font-size:clamp(14px,3.1vh,21px);line-height:1.05;margin:0}
+ h2{font-size:clamp(11px,2.5vh,16px);line-height:1.05}
+ .meta{margin:3px 0 2px;font-size:clamp(7px,1.7vh,10px);gap:5px}
+ .toolbar{margin:2px auto 3px;gap:4px;padding:0 4px}
+ .toolbar button{font-size:clamp(8px,1.7vh,11px);padding:3px 7px;border-radius:6px}
+ .voice-panel{margin:1px auto 2px;padding:2px 4px;gap:3px;border-radius:6px}
+ .voice-panel button{font-size:clamp(7px,1.45vh,9px);padding:2px 5px;border-radius:5px}
+ .voice-panel label{font-size:clamp(7px,1.4vh,9px)}
+ .voice-panel select{font-size:clamp(7px,1.4vh,9px);padding:2px 4px;max-width:115px}
+ .voice-status{display:block;font-size:10px;min-height:14px}
+ .hint,.footer{display:none}
+ .table-wrap{height:calc(100dvh - 112px);padding:0 3px 3px;overflow:hidden}
+ .timetable{height:100%;grid-template-columns:minmax(35px,7.5%) repeat(11,minmax(0,1fr));grid-template-rows:clamp(27px,9dvh,42px) repeat(5,minmax(0,1fr))}
+ .cell{padding:1px;justify-content:space-around}
+ .period{font-size:clamp(6px,1.65vw,10px);line-height:1}
+ .time{font-size:clamp(5px,1.35vw,8px);line-height:1}
+ .day{font-size:clamp(9px,2.2vw,16px);line-height:1;overflow-wrap:anywhere}
+ .subject{font-size:clamp(6px,1.55vw,10px);line-height:1.02}
+ .teacher{font-size:clamp(5px,1.15vw,7px);padding-top:1px}
+ .subnote{font-size:clamp(5px,1.05vw,7px);margin-top:1px}
+ .breakhead{font-size:clamp(5px,1.1vw,7px)}
+ .breakhead strong{font-size:clamp(6px,1.3vw,8px)}
+}
+
+</style>
+</head>
+<body>
+<header>
+  <h1 id="mainTitle">JADUAL WAKTU TAHUN 2026 (3.1)</h1>
+  <h2 id="classLine">5 ASPIRASI</h2>
+  <div class="meta"><span id="schoolLine">SK ALAM DAMAI</span><span id="teacherLine">Class teacher: NOOR DALILA BT ABDUL SAMAD</span></div>
+</header>
+<div class="toolbar">
+  <button id="editHeader">Edit year / class</button>
+  <button id="reset">Reset original timetable</button>
+  <button id="print">Print timetable</button>
+  <button class="primary" id="add">＋ Add lesson</button>
+</div>
+<section class="voice-panel" aria-label="Voice controls">
+  <label>Day <select id="voiceDay" aria-label="Select day"></select></label>
+  <label>Subject to record <select id="voiceSubject" aria-label="Select subject"></select></label>
+  <button id="recordVoice" class="primary">🎙 Record voice</button>
+  <button id="playAll">▶ Play all</button>
+  <button id="repeatAll">🔁 Repeat: Off</button>
+  <button id="nextSubject">⏭ Next subject</button>
+  <button id="stopVoice">■ Stop</button>
+  <div class="voice-status" id="voiceStatus" role="status" aria-live="polite">Choose a day and record a voice clip for each subject.</div>
+</section>
+<div class="hint">Tap any lesson to edit its subject, teacher, details or notes. Timetable edits save on this device; voice clips are stored separately in browser storage.</div>
+<div class="table-wrap"><div class="timetable" id="grid" aria-label="Interactive weekly timetable"></div></div>
+<div class="footer">Timetable recreated from the supplied image · Tap a lesson cell to interact</div>
+
+<dialog id="classEditor">
+ <form method="dialog" class="modal" id="classForm">
+  <h3>Edit class details</h3>
+  <div class="muted">Personalize the timetable heading.</div>
+  <label for="yearField">Year / timetable title</label><input id="yearField" maxlength="50">
+  <label for="classField">Class name</label><input id="classField" maxlength="50">
+  <label for="schoolField">School name</label><input id="schoolField" maxlength="80">
+  <label for="classTeacherField">Class teacher</label><input id="classTeacherField" maxlength="80">
+  <div class="modal-actions"><div class="right"><button type="button" id="classCancel">Cancel</button><button class="primary" type="submit">Save details</button></div></div>
+ </form>
+</dialog>
+<dialog id="editor">
+ <form method="dialog" class="modal" id="editForm">
+  <h3 id="editTitle">Edit lesson</h3>
+  <div class="muted" id="editWhen"></div>
+  <label for="subject">Subject</label><input id="subject" maxlength="70" required>
+  <label for="teacher">Teacher</label><input id="teacher" maxlength="70">
+  <label for="detail">Extra detail / room</label><input id="detail" maxlength="90">
+  <label for="notes">Personal notes</label><textarea id="notes" placeholder="Homework, things to bring, reminders..."></textarea>
+  <div class="small" id="spanInfo"></div>
+  <div class="modal-actions">
+   <button type="button" id="delete">Delete lesson</button>
+   <div class="right"><button type="button" id="cancel">Cancel</button><button class="primary" type="submit">Save</button></div>
+  </div>
+ </form>
+</dialog>
+<script>
+const days=["ISNIN","SELASA","RABU","KHAMIS","JUMAAT"];
+const periods=[
+ ["MASA 1","7:30 - 8:00"],["MASA 2","8:00 - 8:30"],["MASA 3","8:30 - 9:00"],["MASA 4","9:00 - 9:30"],
+ ["5 T2","9:30 - 9:50"],["6 T2","9:50 - 10:20"],["MASA 7","10:20 - 10:50"],["MASA 8","10:50 - 11:20"],
+ ["MASA 9","11:20 - 11:50"],["MASA 10","11:50 - 12:20"],["MASA 11","12:20 - 12:50"]
+];
+const original=[
+// day, start period (1-based), span, subject, teacher, detail
+[0,1,1,"PER","",""],
+[0,2,2,"BAHASA MELAYU","SALIM",""],
+[0,4,1,"PENDIDIKAN MUZIK","HASUZANA","BILIK MUZIK"],
+[0,5,1,"TASMIK/NILAM","DALILA / MAHFUZAH",""],
+[0,6,1,"R","",""],
+[0,7,1,"BAHASA INGGERIS","MASTURA",""],
+[0,8,2,"BAHASA INGGERIS","MASTURA",""],
+[0,10,2,"BAHASA ARAB/CINA","CT ZANARIAH",""],
+[1,1,1,"PENDIDIKAN JASMANI","SUHAIRI",""],
+[1,2,2,"SEJARAH","HAZWANI",""],
+[1,4,2,"PENDIDIKAN SENI VISUAL","MASTURA",""],
+[1,6,1,"E","",""],
+[1,7,2,"SAINS","MALAR","FLORA"],
+[1,9,1,"AGAMA(AL-QURAN)/MORAL","DALILA / MAHFUZAH",""],
+[1,10,1,"AGAMA(JAWI)/MORAL","DALILA",""],
+[1,11,1,"BAHASA ARAB/CINA","CT ZANARIAH",""],
+[2,1,2,"SAINS","MALAR",""],
+[2,3,2,"BAHASA MELAYU","SALIM",""],
+[2,5,1,"BAHASA MELAYU","SALIM","PSS"],
+[2,6,1,"H","",""],
+[2,7,2,"MATEMATIK","SUHAIRI",""],
+[2,9,1,"PENDIDIKAN KESIHATAN","SUHAIRI",""],
+[2,10,2,"AGAMA(AL-QURAN)/MORAL","DALILA / MAHFUZAH",""],
+[3,1,1,"PENDIDIKAN JASMANI","SUHAIRI",""],
+[3,2,2,"AGAMA(ULUM)/MORAL","DALILA",""],
+[3,4,2,"REKA BENTUK TEKNOLOGI","SUHAIRI","BENGKEL RBT"],
+[3,6,1,"A","",""],
+[3,7,2,"MATEMATIK","SUHAIRI",""],
+[3,9,1,"TASMIK/NILAM","DALILA / MAHFUZAH",""],
+[3,10,2,"BAHASA INGGERIS","MASTURA",""],
+[4,1,1,"BAHASA MELAYU","SALIM","PSS"],
+[4,2,2,"BAHASA INGGERIS","MASTURA",""],
+[4,4,2,"MATEMATIK","SUHAIRI",""],
+[4,6,1,"T","",""],
+[4,7,1,"BAHASA INGGERIS","MASTURA",""],
+[4,8,2,"BAHASA MELAYU","SALIM",""],
+[4,10,1,"***","",""],
+[4,11,1,"***","",""]
+];
+let lessons=[];
+const storageKey="aspirasi-timetable-v1";
+const headerKey="aspirasi-timetable-header-v1";
+let headerSettings={year:"2026",className:"5 ASPIRASI",school:"SK ALAM DAMAI",teacher:"NOOR DALILA BT ABDUL SAMAD"};
+function loadHeader(){try{const v=JSON.parse(localStorage.getItem(headerKey)||"null");if(v)headerSettings={...headerSettings,...v}}catch(e){};renderHeader()}
+function renderHeader(){document.getElementById("mainTitle").textContent=`JADUAL WAKTU TAHUN ${headerSettings.year} (3.1)`;document.getElementById("classLine").textContent=headerSettings.className;document.getElementById("schoolLine").textContent=headerSettings.school;document.getElementById("teacherLine").textContent=`Class teacher: ${headerSettings.teacher}`}
+function fresh(){return original.map((a,i)=>({id:i,day:a[0],start:a[1],span:a[2],subject:a[3],teacher:a[4],detail:a[5],notes:""}))}
+function load(){try{const s=localStorage.getItem(storageKey);lessons=s?JSON.parse(s):fresh();if(!Array.isArray(lessons))lessons=fresh()}catch(e){lessons=fresh()}}
+function save(){localStorage.setItem(storageKey,JSON.stringify(lessons))}
+const grid=document.getElementById("grid");
+function el(tag,cls,text){const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n}
+function render(){
+ grid.innerHTML="";
+ const corner=el("div","cell header-cell","");corner.style.gridColumn="1";corner.style.gridRow="1";grid.append(corner);
+ periods.forEach((p,i)=>{const c=el("div","cell header-cell");c.style.gridColumn=String(i+2);c.style.gridRow="1";const name=el("div",i===4||i===5?"breakhead":"period",p[0]);const time=el("div","time",p[1]);c.append(name,time);grid.append(c)});
+ days.forEach((d,i)=>{const c=el("div","cell day",d);c.style.gridColumn="1";c.style.gridRow=String(i+2);grid.append(c)});
+ for(let day=0;day<5;day++){
+  const row=lessons.filter(x=>x.day===day).sort((a,b)=>a.start-b.start);
+  row.forEach(item=>{
+   const c=el("div","cell");c.style.gridColumn=`${item.start+1} / span ${item.span}`;c.style.gridRow=String(day+2);
+   const sub=el("div","subject",item.subject);c.append(sub);
+   if(item.detail)c.append(el("div","subnote",item.detail));
+   if(item.teacher)c.append(el("div","teacher",item.teacher));
+   if(item.notes){const note=el("div","subnote","✎ Has notes");c.append(note)}
+   c.title="Tap to edit "+item.subject;c.addEventListener("click",()=>edit(item.id));grid.append(c);
+  });
+ }
+}
+let currentId=null;
+const dlg=document.getElementById("editor");
+function edit(id){
+ const item=lessons.find(x=>x.id===id);if(!item)return;currentId=id;
+ document.getElementById("editTitle").textContent=item.subject;
+ document.getElementById("editWhen").textContent=days[item.day]+" · "+periods[item.start-1][1]+" · "+item.span+" period(s)";
+ document.getElementById("subject").value=item.subject;document.getElementById("teacher").value=item.teacher||"";
+ document.getElementById("detail").value=item.detail||"";document.getElementById("notes").value=item.notes||"";
+ document.getElementById("spanInfo").textContent="Duration: "+item.span+" period(s). To extend it, use Add lesson to create a longer block in an empty slot.";
+ dlg.showModal();
+}
+document.getElementById("editForm").addEventListener("submit",e=>{
+ e.preventDefault();const x=lessons.find(x=>x.id===currentId);if(!x)return;
+ x.subject=document.getElementById("subject").value.trim();x.teacher=document.getElementById("teacher").value.trim();
+ x.detail=document.getElementById("detail").value.trim();x.notes=document.getElementById("notes").value.trim();
+ save();dlg.close();render();updateVoiceSubjects();
+});
+document.getElementById("delete").onclick=()=>{if(currentId!==null&&confirm("Delete this lesson?")){lessons=lessons.filter(x=>x.id!==currentId);save();dlg.close();render();updateVoiceSubjects()}};
+document.getElementById("cancel").onclick=()=>dlg.close();
+document.getElementById("reset").onclick=()=>{if(confirm("Restore the timetable exactly as the supplied image? This replaces your edits and notes.")){lessons=fresh();save();render();updateVoiceSubjects()}};
+document.getElementById("print").onclick=()=>window.print();
+document.getElementById("editHeader").onclick=()=>{
+ const year=prompt("Timetable year:",headerSettings.year);if(year===null)return;
+ const className=prompt("Class name:",headerSettings.className);if(className===null)return;
+ const school=prompt("School name:",headerSettings.school);if(school===null)return;
+ const teacher=prompt("Class teacher:",headerSettings.teacher);if(teacher===null)return;
+ headerSettings={year:year.trim()||headerSettings.year,className:className.trim()||headerSettings.className,school:school.trim()||headerSettings.school,teacher:teacher.trim()||headerSettings.teacher};
+ localStorage.setItem(headerKey,JSON.stringify(headerSettings));renderHeader();
+};
+document.getElementById("add").onclick=()=>{
+ const day=prompt("Day number: 1 Monday, 2 Tuesday, 3 Wednesday, 4 Thursday, 5 Friday");
+ if(day===null)return;const d=Number(day)-1;if(!Number.isInteger(d)||d<0||d>4){alert("Enter a day from 1 to 5.");return}
+ const start=Number(prompt("Starting period (1–11):"));if(!Number.isInteger(start)||start<1||start>11){alert("Enter a period from 1 to 11.");return}
+ const span=Number(prompt("How many periods should it span? (1–11)"));if(!Number.isInteger(span)||span<1||start+span-1>11){alert("That duration does not fit in the timetable.");return}
+ const collision=lessons.some(x=>x.day===d&&start<x.start+x.span&&x.start<start+span);
+ if(collision){alert("Those periods are already occupied. Edit or delete the existing lesson first.");return}
+ const subject=prompt("Subject name:");if(!subject||!subject.trim())return;
+ lessons.push({id:Date.now(),day:d,start,span,subject:subject.trim(),teacher:"",detail:"",notes:""});save();render();updateVoiceSubjects();
+};
+
+// Voice recordings are stored as audio blobs in IndexedDB (better suited to audio than cookies/localStorage).
+const VOICE_DB="aspirasi-voice-db", VOICE_STORE="clips";
+let voiceDb=null, mediaRecorder=null, recordingChunks=[], recordingStream=null;
+let repeatEnabled=false, playing=false, stopRequested=false, nextIndex=0, currentAudio=null;
+const voiceDay=document.getElementById("voiceDay"), voiceSubject=document.getElementById("voiceSubject"), voiceStatus=document.getElementById("voiceStatus");
+function status(msg){voiceStatus.textContent=msg}
+function openVoiceDb(){return new Promise((resolve,reject)=>{const req=indexedDB.open(VOICE_DB,1);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(VOICE_STORE))db.createObjectStore(VOICE_STORE,{keyPath:"id"})};req.onsuccess=()=>{voiceDb=req.result;resolve(voiceDb)};req.onerror=()=>reject(req.error)})}
+function clipRequest(mode,id,value){return new Promise((resolve,reject)=>{const tx=voiceDb.transaction(VOICE_STORE,mode);const store=tx.objectStore(VOICE_STORE);let req;if(mode==="readonly")req=store.get(String(id));else req=store.put({id:String(id),blob:value,updatedAt:Date.now()});req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}
+function lessonsForVoiceDay(){return lessons.filter(x=>x.day===Number(voiceDay.value)).sort((a,b)=>a.start-b.start)}
+function updateVoiceSubjects(){const list=lessonsForVoiceDay();voiceSubject.innerHTML="";list.forEach((x,i)=>{const o=document.createElement("option");o.value=String(x.id);o.textContent=`${i+1}. ${x.subject} · ${periods[x.start-1][0]}`;voiceSubject.append(o)});nextIndex=0;status(`${days[Number(voiceDay.value)]}: ${list.length} lesson(s). Next Subject starts from the first lesson.`)}
+function syncDaySelector(){voiceDay.innerHTML="";days.forEach((d,i)=>{const o=document.createElement("option");o.value=String(i);o.textContent=d;voiceDay.append(o)});updateVoiceSubjects()}
+function stopPlayback(){stopRequested=true;playing=false;if(currentAudio){currentAudio.pause();currentAudio.currentTime=0;currentAudio=null}}
+async function playClipForLesson(item){const rec=await clipRequest("readonly",item.id);if(!rec||!rec.blob){status(`No recording saved for ${item.subject}. Record that subject first.`);return false}return new Promise(resolve=>{const url=URL.createObjectURL(rec.blob);const audio=new Audio(url);currentAudio=audio;let settled=false;const finish=ok=>{if(settled)return;settled=true;URL.revokeObjectURL(url);if(currentAudio===audio)currentAudio=null;resolve(ok)};audio.onended=()=>finish(true);audio.onpause=()=>{if(stopRequested)finish(false)};audio.onerror=()=>{status(`Couldn't play the recording for ${item.subject}.`);finish(false)};audio.play().catch(()=>{status("Playback was blocked by the browser. Tap a voice button again.");finish(false)})})}
+async function playSequence(){if(playing)return;const list=lessonsForVoiceDay();if(!list.length){status("There are no lessons for this day.");return}stopRequested=false;playing=true;do{for(let i=0;i<list.length;i++){if(stopRequested)break;nextIndex=i+1;status(`Playing ${i+1} of ${list.length}: ${list[i].subject}`);await playClipForLesson(list[i]);if(stopRequested)break}}while(repeatEnabled&&!stopRequested);playing=false;if(!stopRequested)status(repeatEnabled?"Repeating…":"Finished the day's recordings.")}
+async function playNextSubject(){const list=lessonsForVoiceDay();if(!list.length)return;stopPlayback();const item=list[nextIndex%list.length];nextIndex=(nextIndex+1)%list.length;status(`Subject ${((nextIndex+list.length-1)%list.length)+1} of ${list.length}: ${item.subject}`);await playClipForLesson(item)}
+voiceDay.addEventListener("change",()=>{stopPlayback();repeatEnabled=false;document.getElementById("repeatAll").textContent="🔁 Repeat: Off";document.getElementById("repeatAll").classList.remove("repeat-on");updateVoiceSubjects()});
+document.getElementById("recordVoice").addEventListener("click",async()=>{
+ const item=lessons.find(x=>String(x.id)===voiceSubject.value);if(!item){status("Choose a subject first.");return}
+ const btn=document.getElementById("recordVoice");
+ if(mediaRecorder&&mediaRecorder.state==="recording"){mediaRecorder.stop();btn.textContent="🎙 Record voice";btn.classList.remove("recording");return}
+ if(!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder){
+   const msg="Microphone access is blocked in this page's current opening mode. Open the timetable from a secure HTTPS website in Chrome, then allow Microphone permission. A local file preview or in-app viewer may not support recording.";
+   status(msg); alert(msg); return;
+ }
+ try{
+   status("Requesting microphone permission…");
+   recordingStream=await navigator.mediaDevices.getUserMedia({audio:true});
+   recordingChunks=[];
+   mediaRecorder=new MediaRecorder(recordingStream);
+   mediaRecorder.ondataavailable=e=>{if(e.data&&e.data.size)recordingChunks.push(e.data)};
+   mediaRecorder.onerror=()=>{status("Recording error. Please try again.");alert("Recording failed. Please try again.")};
+   mediaRecorder.onstop=async()=>{
+     try{
+       const blob=new Blob(recordingChunks,{type:mediaRecorder.mimeType||"audio/webm"});
+       if(!voiceDb) await openVoiceDb();
+       await clipRequest("readwrite",item.id,blob);
+       status(`Saved your voice for ${item.subject}.`);
+       alert(`Voice saved for ${item.subject}!`);
+     }catch(err){
+       status("Couldn't save this recording. Check browser storage space and try again.");
+       alert("Couldn't save the recording. Check browser storage permission/storage space and try again.");
+     }
+     recordingStream?.getTracks().forEach(t=>t.stop());recordingStream=null;
+   };
+   mediaRecorder.start();
+   btn.textContent="■ Stop & save";btn.classList.add("recording");
+   status(`Recording your voice for ${item.subject}… Tap Stop & save when finished.`);
+ }catch(err){
+   const msg=err && err.name==="NotAllowedError"
+     ? "Microphone permission was denied. In Chrome, open Site settings → Microphone → Allow, then reload the timetable."
+     : "Couldn't access the microphone. Check that your browser has microphone permission and that no other app is using it.";
+   status(msg);alert(msg);
+ }
+});
+document.getElementById("playAll").onclick=()=>{stopPlayback();playSequence()};
+document.getElementById("repeatAll").onclick=()=>{repeatEnabled=!repeatEnabled;const b=document.getElementById("repeatAll");b.textContent=repeatEnabled?"🔁 Repeat: On":"🔁 Repeat: Off";b.classList.toggle("repeat-on",repeatEnabled);if(repeatEnabled&&!playing){stopRequested=false;playSequence()}else if(!repeatEnabled)status("Repeat is off.")};
+document.getElementById("nextSubject").onclick=playNextSubject;
+document.getElementById("stopVoice").onclick=()=>{stopPlayback();repeatEnabled=false;const b=document.getElementById("repeatAll");b.textContent="🔁 Repeat: Off";b.classList.remove("repeat-on");status("Playback stopped.")};
+
+load();loadHeader();render();syncDaySelector();openVoiceDb().then(()=>status("Voice storage ready. Record a clip for each subject." )).catch(()=>status("Voice storage is unavailable in this browser. Timetable editing still works."));
+</script>
+</body></html>
