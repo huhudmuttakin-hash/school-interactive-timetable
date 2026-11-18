@@ -190,7 +190,7 @@ const original=[
 let lessons=[];
 const storageKey="aspirasi-timetable-v1";
 const headerKey="aspirasi-timetable-header-v1";
-let headerSettings={year:"2026",className:"5 ASPIRASI",school:"SK ALAM DAMAI",teacher:"NOOR DALILA BT ABDUL SAMAD"};
+let headerSettings={year:"2026",className:"Edit...",school:"Edit...",teacher:"Edit..."};
 function loadHeader(){try{const v=JSON.parse(localStorage.getItem(headerKey)||"null");if(v)headerSettings={...headerSettings,...v}}catch(e){};renderHeader()}
 function renderHeader(){document.getElementById("mainTitle").textContent=`JADUAL WAKTU TAHUN ${headerSettings.year} (3.1)`;document.getElementById("classLine").textContent=headerSettings.className;document.getElementById("schoolLine").textContent=headerSettings.school;document.getElementById("teacherLine").textContent=`Class teacher: ${headerSettings.teacher}`}
 function fresh(){return original.map((a,i)=>({id:i,day:a[0],start:a[1],span:a[2],subject:a[3],teacher:a[4],detail:a[5],notes:""}))}
