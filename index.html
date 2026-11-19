@@ -55,6 +55,8 @@ textarea{min-height:100px;resize:vertical}
 .voice-panel .repeat-on{background:#7c3aed;color:#fff}
 @media(max-width:700px){.voice-panel{gap:5px;padding:7px;margin:4px auto 7px}.voice-panel button{font-size:10px;padding:7px 8px}.voice-panel label{font-size:10px}.voice-panel select{font-size:10px;max-width:135px;padding:6px}}
 
+@media print{body{background:white}.toolbar,.hint{display:none}.table-wrap{padding:0;overflow:visible}.timetable{min-width:0;grid-template-columns:105px repeat(11,1fr);grid-template-rows:72px repeat(5,130px)}.cell{break-inside:avoid}}
+
 /* Landscape phone: fit the complete timetable into the visible screen */
 @media (orientation:landscape) and (max-height:600px){
  html,body{height:100%;overflow:hidden}
@@ -87,13 +89,14 @@ textarea{min-height:100px;resize:vertical}
 </head>
 <body>
 <header>
-  <h1 id="mainTitle">JADUAL WAKTU TAHUN 2026 (3.1)</h1>
+  <h1 id="mainTitle">JADUAL WAKTU TAHUN 2026 (EDIT...)</h1>
   <h2 id="classLine">5 ASPIRASI</h2>
-  <div class="meta"><span id="schoolLine">SK ALAM DAMAI</span><span id="teacherLine">Class teacher: NOOR DALILA BT ABDUL SAMAD</span></div>
+  <div class="meta"><span id="schoolLine">EDIT...</span><span id="teacherLine">Class teacher: EDIT...</span></div>
 </header>
 <div class="toolbar">
-  <button id="editHeader">Edit timetable details</button>
+  <button id="editHeader">Edit year / class</button>
   <button id="reset">Reset original timetable</button>
+  <button id="print">Print timetable</button>
   <button class="primary" id="add">＋ Add lesson</button>
 </div>
 <section class="voice-panel" aria-label="Voice controls">
@@ -187,9 +190,9 @@ const original=[
 let lessons=[];
 const storageKey="aspirasi-timetable-v1";
 const headerKey="aspirasi-timetable-header-v1";
-let headerSettings={title:"JADUAL WAKTU TAHUN 2026 (3.1)",year:"2026",className:"5 ASPIRASI",school:"SK ALAM DAMAI",teacher:"NOOR DALILA BT ABDUL SAMAD"};
-function loadHeader(){try{const v=JSON.parse(localStorage.getItem(headerKey)||"null");if(v)headerSettings={...headerSettings,...v};if(!headerSettings.title)headerSettings.title=`JADUAL WAKTU TAHUN ${headerSettings.year||"2026"} (3.1)`}catch(e){};renderHeader()}
-function renderHeader(){document.getElementById("mainTitle").textContent=headerSettings.title;document.getElementById("classLine").textContent=headerSettings.className;document.getElementById("schoolLine").textContent=headerSettings.school;document.getElementById("teacherLine").textContent=`Class teacher: ${headerSettings.teacher}`;document.title=headerSettings.title+" — Interactive Timetable"}
+let headerSettings={year:"2026",className:"Edit...",school:"Edit...",teacher:"Edit..."};
+function loadHeader(){try{const v=JSON.parse(localStorage.getItem(headerKey)||"null");if(v)headerSettings={...headerSettings,...v}}catch(e){};renderHeader()}
+function renderHeader(){document.getElementById("mainTitle").textContent=`JADUAL WAKTU TAHUN ${headerSettings.year} (3.1)`;document.getElementById("classLine").textContent=headerSettings.className;document.getElementById("schoolLine").textContent=headerSettings.school;document.getElementById("teacherLine").textContent=`Class teacher: ${headerSettings.teacher}`}
 function fresh(){return original.map((a,i)=>({id:i,day:a[0],start:a[1],span:a[2],subject:a[3],teacher:a[4],detail:a[5],notes:""}))}
 function load(){try{const s=localStorage.getItem(storageKey);lessons=s?JSON.parse(s):fresh();if(!Array.isArray(lessons))lessons=fresh()}catch(e){lessons=fresh()}}
 function save(){localStorage.setItem(storageKey,JSON.stringify(lessons))}
@@ -232,12 +235,13 @@ document.getElementById("editForm").addEventListener("submit",e=>{
 document.getElementById("delete").onclick=()=>{if(currentId!==null&&confirm("Delete this lesson?")){lessons=lessons.filter(x=>x.id!==currentId);save();dlg.close();render();updateVoiceSubjects()}};
 document.getElementById("cancel").onclick=()=>dlg.close();
 document.getElementById("reset").onclick=()=>{if(confirm("Restore the timetable exactly as the supplied image? This replaces your edits and notes.")){lessons=fresh();save();render();updateVoiceSubjects()}};
+document.getElementById("print").onclick=()=>window.print();
 document.getElementById("editHeader").onclick=()=>{
- const title=prompt("Timetable title:",headerSettings.title);if(title===null)return;
+ const year=prompt("Timetable year:",headerSettings.year);if(year===null)return;
  const className=prompt("Class name:",headerSettings.className);if(className===null)return;
  const school=prompt("School name:",headerSettings.school);if(school===null)return;
  const teacher=prompt("Class teacher:",headerSettings.teacher);if(teacher===null)return;
- headerSettings={...headerSettings,title:title.trim()||headerSettings.title,className:className.trim()||headerSettings.className,school:school.trim()||headerSettings.school,teacher:teacher.trim()||headerSettings.teacher};
+ headerSettings={year:year.trim()||headerSettings.year,className:className.trim()||headerSettings.className,school:school.trim()||headerSettings.school,teacher:teacher.trim()||headerSettings.teacher};
  localStorage.setItem(headerKey,JSON.stringify(headerSettings));renderHeader();
 };
 document.getElementById("add").onclick=()=>{
